@@ -15,6 +15,8 @@ Free chat:
 """
 
 import asyncio
+import glob
+import json
 import logging
 import os
 import time
@@ -193,6 +195,20 @@ Be realistic. Air freight to UZ/KZ is ~$4-8/kg."""
 # ── Core runner ───────────────────────────────────────────────────────────────
 
 async def _run_report(update: Update, context: ContextTypes.DEFAULT_TYPE, budget: float):
+    import glob
+    report_files = sorted(glob.glob("/app/uzum_report_*.json"))
+    if report_files:
+        latest = report_files[-1]
+        age = time.time() - os.path.getmtime(latest)
+        if age < 3600:
+            with open(latest, "r") as f:
+                data = json.load(f)
+            products = data.get("all_products", [])
+            if products:
+                await update.message.reply_text("📦 Using cached report (less than 1 hour old)...")
+                products = [score_product(p) for p in products]
+                _set_products(context, products)
+
     if _cache_fresh(context):
         products = _get_products(context)
         await update.message.reply_text("📦 Using cached market data (< 1h old)...")
