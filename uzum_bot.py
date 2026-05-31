@@ -487,6 +487,43 @@ async def _main_async():
         ])
         await app.start()
         await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+
+        async def daily_report():
+            import datetime as dt
+            while True:
+                now = dt.datetime.utcnow()
+                target = now.replace(hour=2, minute=0, second=0, microsecond=0)
+                if now >= target:
+                    target += dt.timedelta(days=1)
+                wait_seconds = (target - now).total_seconds()
+                await asyncio.sleep(wait_seconds)
+                try:
+                    chat_id = int(os.getenv("TELEGRAM_CHAT_ID", "687396965"))
+                    budget = read_budget()
+
+                    class FakeUpdate:
+                        class message:
+                            @staticmethod
+                            async def reply_text(text, **kwargs):
+                                await app.bot.send_message(chat_id=chat_id, text=text, **kwargs)
+                            @staticmethod
+                            async def edit_text(text, **kwargs):
+                                await app.bot.send_message(chat_id=chat_id, text=text, **kwargs)
+                        class effective_chat:
+                            id = chat_id
+
+                    class FakeContext:
+                        bot_data = {}
+                        user_data = {}
+                        bot = app.bot
+
+                    await app.bot.send_message(chat_id=chat_id, text="🌅 *Good morning! Daily Uzum report starting...*", parse_mode="Markdown")
+                    await _run_report(FakeUpdate(), FakeContext(), budget)
+                except Exception as e:
+                    print(f"Daily report error: {e}")
+
+        asyncio.create_task(daily_report())
+
         try:
             await asyncio.Event().wait()
         except (KeyboardInterrupt, SystemExit):
