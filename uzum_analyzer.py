@@ -61,24 +61,62 @@ import json as _json
 
 def _load_real_headers():
     headers_file = "/Users/mac/Documents/uzum/uzum_headers.json"
-    token_file = "/Users/mac/Documents/uzum/token.txt"
+    token = os.getenv("UZUM_BEARER_TOKEN", "").strip() or _get_uzum_token()
     if os.path.exists(headers_file):
         with open(headers_file, "r") as f:
-            h = _json.load(f)
-        if os.path.exists(token_file):
-            with open(token_file, "r") as f:
-                token = f.read().strip()
+            h = json.load(f)
+        if token:
             h["authorization"] = f"Bearer {token}"
         return h
-    return {}
+    return {
+        "Accept": "*/*",
+        "Accept-Language": "ru-RU",
+        "Apollographql-Client-Name": "web-customers",
+        "Apollographql-Client-Version": "1.63.2",
+        "Authorization": f"Bearer {token}",
+        "City-Id": "1",
+        "City-Latitude": "41.379112",
+        "City-Longitude": "69.29944",
+        "Content-Type": "application/json",
+        "Latitude": "41.379112",
+        "Longitude": "69.29944",
+        "Origin": "https://uzum.uz",
+        "Referer": "https://uzum.uz/",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+        "x-iid": "c60c025e-d101-461d-a2fa-e0d8586a8d14",
+    }
 
 HEADERS = _load_real_headers()
 
 def _load_real_query():
-    if os.path.exists("/Users/mac/Documents/uzum/uzum_payload.json"):
-        with open("/Users/mac/Documents/uzum/uzum_payload.json", "r") as f:
+    payload_file = "/Users/mac/Documents/uzum/uzum_payload.json"
+    if os.path.exists(payload_file):
+        with open(payload_file, "r") as f:
             return json.load(f).get("query", "")
-    return ""
+    return """query MakeSearch_ItemsAndFilters($queryInput: MakeSearchQueryInput!) {
+  makeSearch(query: $queryInput) {
+    items {
+      catalogCard {
+        ...ProductCardFragment
+        __typename
+      }
+      __typename
+    }
+    total
+    __typename
+  }
+}
+fragment ProductCardFragment on CatalogCard {
+  id
+  productId
+  title
+  adult
+  minFullPrice
+  minSellPrice
+  feedbackQuantity
+  rating
+  __typename
+}"""
 
 PRODUCT_QUERY = _load_real_query()
 
