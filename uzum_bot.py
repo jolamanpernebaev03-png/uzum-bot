@@ -223,7 +223,13 @@ async def _run_report(update: Update, context: ContextTypes.DEFAULT_TYPE, budget
         
         loop = asyncio.get_event_loop()
         import functools
-        products = await loop.run_in_executor(None, functools.partial(scrape_all_categories, pages_per_category=2, progress_callback=lambda t: asyncio.run_coroutine_threadsafe(send_progress(t), loop).result()))
+        try:
+            products = await loop.run_in_executor(None, functools.partial(scrape_all_categories, pages_per_category=2, progress_callback=lambda t: asyncio.run_coroutine_threadsafe(send_progress(t), loop).result()))
+        except RuntimeError as e:
+            if "UZUM_TOKEN_EXPIRED" in str(e):
+                await update.message.reply_text("⚠️ *Uzum token expired!*\n\nPlease update UZUM_BEARER_TOKEN in Railway Variables.\n\n1. Go to uzum.uz in Chrome\n2. Open DevTools → Network → find a graphql request\n3. Copy the Bearer token\n4. Update it in Railway → uzum-bot → Variables", parse_mode="Markdown")
+                return
+            raise
         if not products:
             await update.message.reply_text("❌ Could not fetch Uzum data. Check your UZUM token.")
             return

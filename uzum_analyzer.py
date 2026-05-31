@@ -196,6 +196,8 @@ def scrape_category(category_name, category_id, offset=0, limit=48):
             return products, total
         else:
             print(f"  HTTP {response.status_code} for {category_name}: {response.text[:200]}")
+            if response.status_code == 401:
+                raise RuntimeError("UZUM_TOKEN_EXPIRED")
             return [], 0
     except Exception as e:
         print(f"  Error scraping {category_name}: {e}")
