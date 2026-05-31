@@ -14,7 +14,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "687396965")
 from uzum_token_manager import get_token as _get_uzum_token
-UZUM_BEARER_TOKEN = os.getenv("UZUM_BEARER_TOKEN", "") or _get_uzum_token()
+UZUM_BEARER_TOKEN = os.getenv("UZUM_BEARER_TOKEN", "").strip() or _get_uzum_token()
 UZUM_COOKIE = os.getenv("UZUM_COOKIE", "")
 
 UZS_TO_USD = float(os.getenv("UZS_TO_USD", "12700"))
