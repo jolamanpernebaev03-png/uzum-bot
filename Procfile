@@ -1,1 +1,1 @@
-web: python3 ai_group_chat.py
+worker: python3 uzum_bot.py
