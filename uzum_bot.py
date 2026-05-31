@@ -213,9 +213,17 @@ async def _run_report(update: Update, context: ContextTypes.DEFAULT_TYPE, budget
         products = _get_products(context)
         await update.message.reply_text("📦 Using cached market data (< 1h old)...")
     else:
-        await update.message.reply_text("📡 Scraping Uzum market data... (30-60 sec)")
+        sent_msg = await update.message.reply_text("📡 Starting scrape...")
+        
+        async def send_progress(text):
+            try:
+                await sent_msg.edit_text(text)
+            except Exception:
+                pass
+        
         loop = asyncio.get_event_loop()
-        products = await loop.run_in_executor(None, lambda: scrape_all_categories(pages_per_category=2))
+        import functools
+        products = await loop.run_in_executor(None, functools.partial(scrape_all_categories, pages_per_category=2, progress_callback=lambda t: asyncio.run_coroutine_threadsafe(send_progress(t), loop).result()))
         if not products:
             await update.message.reply_text("❌ Could not fetch Uzum data. Check your UZUM token.")
             return

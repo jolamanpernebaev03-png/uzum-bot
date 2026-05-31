@@ -202,12 +202,14 @@ def scrape_category(category_name, category_id, offset=0, limit=48):
         return [], 0
 
 
-def scrape_all_categories(pages_per_category=3):
+def scrape_all_categories(pages_per_category=3, progress_callback=None):
     """Scrape all categories"""
     all_products = []
 
     for cat_name, cat_id in CATEGORIES.items():
         print(f"\n📦 {cat_name} (ID: {cat_id})")
+        if progress_callback:
+            progress_callback(f"📦 Scraping {cat_name}... ({list(CATEGORIES.keys()).index(cat_name)+1}/{len(CATEGORIES)})")
         category_products = []
 
         for page in range(pages_per_category):
