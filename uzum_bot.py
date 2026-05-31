@@ -30,6 +30,26 @@ from telegram.ext import (
     filters,
 )
 
+# ── Budget persistence ──────────────────────────────────────────────────────
+
+BUDGET_FILE = "/app/budget.txt"
+
+
+def read_budget():
+    if os.path.exists(BUDGET_FILE):
+        with open(BUDGET_FILE, "r") as f:
+            try:
+                return float(f.read().strip())
+            except:
+                pass
+    return 1000.0
+
+
+def save_budget(amount):
+    with open(BUDGET_FILE, "w") as f:
+        f.write(str(amount))
+
+
 # ── Import the data engine ──────────────────────────────────────────────────
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -218,6 +238,11 @@ async def _run_report(update: Update, context: ContextTypes.DEFAULT_TYPE, budget
 # ── Command handlers ──────────────────────────────────────────────────────────
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    budget = context.user_data.get("budget") or read_budget()
+    if budget and budget != 1000.0:
+        budget_info = f"\n\n💰 Your saved budget is *${budget:,.0f}*. Run /report to get your analysis."
+    else:
+        budget_info = "\n\n💰 Default budget is *$1,000*. Send me a number or use /budget to set yours."
     await update.message.reply_text(
         "👋 *Hello! I'm your Uzum Sourcing Assistant!*\n\n"
         "I analyze Uzum.uz, compare prices with Alibaba/1688, and help you find "
@@ -225,21 +250,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "💬 *You can just chat with me* — ask about products, pricing, seasons, "
         "or anything sourcing-related. I'm here to help!\n\n"
         "💰 Or, if you want a full *sourcing report* with profit analysis, "
-        "just send me your budget as a number (e.g. *1000*) and I'll do the rest.\n\n"
-        "😊 So, what would you like to know?",
+        "just send me your budget as a number (e.g. *1000*) and I'll do the rest."
+        f"{budget_info}",
         parse_mode="Markdown",
     )
-    context.user_data["waiting_budget"] = True
 
 
 async def cmd_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    budget = context.user_data.get("budget")
-    if not budget:
-        await update.message.reply_text(
-            "Please set your budget first.\nType /start or send a number like *1000*",
-            parse_mode="Markdown",
-        )
-        return
+    budget = context.user_data.get("budget") or read_budget()
     await update.message.reply_text(f"⏳ Running analysis with budget *${budget:,.0f}*...", parse_mode="Markdown")
     await _run_report(update, context, budget)
 
@@ -290,6 +308,7 @@ async def cmd_budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Invalid. Example: `/budget 2000`", parse_mode="Markdown")
         return
     context.user_data["budget"] = budget
+    save_budget(budget)
     await update.message.reply_text(
         f"✅ Budget set to *${budget:,.0f}*\nRun /report to get your analysis.",
         parse_mode="Markdown",
@@ -335,14 +354,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle all text messages — budget input OR free AI chat."""
     text = update.message.text.strip()
 
-    # Check if we're waiting for a budget
-    if context.user_data.get("waiting_budget"):
-        clean = text.replace("$", "").replace(",", "").replace(" ", "")
+    # Check if message looks like a budget number (e.g. "1000", "$500", "1,500")
+    if text.replace("$", "").replace(",", "").replace(".", "").replace(" ", "").isdigit():
         try:
-            budget = float(clean)
+            budget = float(text.replace("$", "").replace(",", "").replace(" ", ""))
             if budget > 0:
+                save_budget(budget)
                 context.user_data["budget"] = budget
-                context.user_data["waiting_budget"] = False
                 await update.message.reply_text(
                     f"✅ Budget set: *${budget:,.0f}*\n\n⏳ Scraping Uzum market data...",
                     parse_mode="Markdown",
