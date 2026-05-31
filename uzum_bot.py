@@ -41,7 +41,6 @@ from uzum_analyzer import (
     post_with_retry,
     CATEGORIES,
     SEASONAL_CALENDAR,
-    DEEPSEEK_API_KEY,
     TELEGRAM_BOT_TOKEN,
     UZS_TO_USD,
 )
@@ -57,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 def _deepseek(prompt: str, max_tokens: int = 1500) -> str:
     """Call DeepSeek API and return text."""
-    api_key = DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY", "")
+    api_key = os.getenv("DEEPSEEK_API_KEY", "")
     if not api_key:
         return "⚠️ DEEPSEEK_API_KEY is not set."
     try:
@@ -301,7 +300,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cached_at = context.bot_data.get("cached_at")
     cache_info = f"✅ Cache: {int((time.time() - cached_at) / 60)} min ago" if cached_at else "❌ No cache yet"
     budget = context.user_data.get("budget", "not set")
-    api_ok = "✅ Ready" if (DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY")) else "❌ Missing"
+    api_ok = "✅ Ready" if os.getenv("DEEPSEEK_API_KEY", "") else "❌ Missing"
     await update.message.reply_text(
         f"🤖 *Bot Status*\n\n"
         f"💰 Budget: ${budget}\n"
@@ -416,7 +415,7 @@ async def _main_async():
         return
 
     print("🚀 Starting Uzum Sourcing Bot...")
-    print(f"   DeepSeek AI: {'✅ Ready' if (DEEPSEEK_API_KEY or os.getenv('DEEPSEEK_API_KEY')) else '❌ Missing DEEPSEEK_API_KEY'}")
+    print(f"   DeepSeek AI: {'✅ Ready' if os.getenv('DEEPSEEK_API_KEY', '') else '❌ Missing DEEPSEEK_API_KEY'}")
     print(f"   Telegram:  ✅ Token found")
 
     app = Application.builder().token(token).build()
